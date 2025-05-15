@@ -1,0 +1,49 @@
+{
+  "language_overrides": {
+    "Rust": {
+      "enable_language_server": true,
+      "format_on_save": true,
+      "lsp": {
+        "command": "rust-analyzer",
+        "initialization_options": {
+          "check": {
+            "command": "clippy",
+            "allTargets": true
+          },
+          "cargo": {
+            "buildScripts": {
+              "enable": true
+            },
+            "features": "all"
+          },
+          "procMacro": {
+            "enable": true
+          },
+          "diagnostics": {
+            "experimental": {
+              "enable": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "telemetry": {
+    "diagnostics": false
+  },
+  "theme": "One Dark",
+  "vim_mode": false,
+  "terminal": {
+    "font_size": 14,
+    "blinking": "off"
+  },
+  "editor": {
+    "font_size": 14,
+    "tab_size": 4,
+    "hard_tabs": false,
+    "show_invisible": false,
+    "show_line_numbers": true,
+    "scroll_beyond_last_line": false,
+    "auto_bracket_pairs": true
+  }
+}

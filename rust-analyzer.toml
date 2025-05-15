@@ -1,0 +1,38 @@
+[sysroot]
+discover_sysroot = true
+
+[target]
+auto_discover = true
+
+[lens]
+debug = true
+implementations = true
+run = true
+
+[cargo]
+build_scripts = true
+features = "all"
+run_build_scripts = true
+
+[check]
+command = "clippy"
+all_targets = true
+
+[diagnostics]
+disabled = []
+experimental = true
+
+[rustfmt]
+overrideCommand = ["rustfmt", "--edition", "2021"]
+
+[inlayHints]
+bindingModeHints.enable = true
+closingBraceHints.enable = true
+discriminantHints.enable = "always"
+typeHints.enable = true
+parameterHints.enable = true
+chainingHints.enable = true
+lifetimeElisionHints.enable = "always"
+
+[procMacro]
+enable = true

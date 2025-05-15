@@ -1,0 +1,43 @@
+[package]
+name = "Ferronix"
+version = "0.1.0"
+edition = "2021"
+authors = ["Tyler Harpool <tylerharpool@gmail.com>"]
+description = "A simple Rust application with Nix integration"
+readme = "README.md"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Async runtime
+tokio = { version = "1.36", features = ["full"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Date and time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Command line interface
+clap = { version = "4.5", features = ["derive"] }
+
+[dev-dependencies]
+# Testing
+rstest = "0.19"
+mockall = "0.12"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

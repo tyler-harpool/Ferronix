@@ -1,0 +1,37 @@
+[
+  {
+    "label": "cargo check",
+    "command": "cargo check",
+    "cwd": "${workspace_root}"
+  },
+  {
+    "label": "cargo build",
+    "command": "cargo build",
+    "cwd": "${workspace_root}"
+  },
+  {
+    "label": "cargo run",
+    "command": "cargo run",
+    "cwd": "${workspace_root}"
+  },
+  {
+    "label": "cargo test",
+    "command": "cargo test",
+    "cwd": "${workspace_root}"
+  },
+  {
+    "label": "cargo clippy",
+    "command": "cargo clippy",
+    "cwd": "${workspace_root}"
+  },
+  {
+    "label": "nix develop",
+    "command": "nix develop",
+    "cwd": "${workspace_root}"
+  },
+  {
+    "label": "nix build",
+    "command": "nix build",
+    "cwd": "${workspace_root}"
+  }
+]
