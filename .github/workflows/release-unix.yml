@@ -3,7 +3,7 @@ name: Release Unix Binaries
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "*.*.*"
 
 permissions:
   contents: write # This is required for creating releases and uploading assets
@@ -20,12 +20,12 @@ jobs:
           - os: ubuntu-latest
             asset_name: ferronix-linux-x86_64
             executable: ferronix
-            
+
           # macOS builds
           - os: macos-latest
             asset_name: ferronix-macos-x86_64
             executable: ferronix
-            
+
           # macOS ARM64 with cross-compilation
           - os: macos-latest
             asset_name: ferronix-macos-arm64
@@ -34,13 +34,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Install Nix
         uses: cachix/install-nix-action@v22
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
-      
+
       - name: Setup Cachix
         uses: cachix/cachix-action@v12
         with:
@@ -49,38 +49,38 @@ jobs:
           # Enable pushing to Cachix to speed up future builds
           pushFilter: "ferronix.*"
           # Create a GitHub secret CACHIX_AUTH_TOKEN from cachix.org
-      
+
       - name: Generate Cargo.lock
         run: nix develop -c cargo generate-lockfile
-      
+
       # Install cross-compiler target if specified
       - name: Install Rust Target
         if: matrix.target != ''
         run: nix develop -c rustup target add ${{ matrix.target }}
-      
+
       # Build for native architecture by default
       - name: Build Release Binary (Native)
         if: matrix.target == ''
         run: nix develop -c cargo build --release
-      
+
       # Build for specified target if available
       - name: Build Release Binary (Target)
         if: matrix.target != ''
         run: nix develop -c cargo build --release --target ${{ matrix.target }}
-      
+
       # Copy binary with appropriate name
       - name: Copy Native Binary
         if: matrix.target == ''
         run: cp target/release/${{ matrix.executable }} ${{ matrix.asset_name }}
-        
+
       - name: Copy Target Binary
         if: matrix.target != ''
         run: cp target/${{ matrix.target }}/release/${{ matrix.executable }} ${{ matrix.asset_name }}
-        
+
       # Make binary executable
       - name: Make binary executable
         run: chmod +x ${{ matrix.asset_name }}
-        
+
       - name: Release
         uses: softprops/action-gh-release@v1
         with:

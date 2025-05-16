@@ -3,7 +3,7 @@ name: Release Windows Binary
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "*.*.*"
 
 permissions:
   contents: write # This is required for creating releases and uploading assets
@@ -15,37 +15,22 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
-      
-      # Even on Windows, we can use Cachix for caching build artifacts
-      - name: Install Nix
-        uses: cachix/install-nix-action@v22
-        with:
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      
-      - name: Setup Cachix
-        uses: cachix/cachix-action@v12
-        with:
-          name: ferronix
-          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-          pushFilter: "ferronix.*"
-      
-      # Now use Rust normally for building
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
-      
+
       - name: Generate Cargo.lock
         run: cargo generate-lockfile
-      
+
       - name: Build Release Binary
         run: cargo build --release
-      
+
       - name: Copy Binary
         shell: powershell
         run: Copy-Item target\release\ferronix.exe -Destination ferronix-windows-x86_64.exe
-      
+
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
