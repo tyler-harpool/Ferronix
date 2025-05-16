@@ -15,20 +15,17 @@ jobs:
     strategy:
       matrix:
         include:
-          # Linux builds
+          # Linux build
           - os: ubuntu-latest
             asset_name: ferronix-linux-x86_64
-            target: x86_64-unknown-linux-gnu
-          - os: ubuntu-latest
-            asset_name: ferronix-linux-aarch64
-            target: aarch64-unknown-linux-gnu
             
           # macOS builds
           - os: macos-latest
             asset_name: ferronix-macos-x86_64
-            target: x86_64-apple-darwin
+            
+          # Optional: Add macOS ARM64 with cross-compilation
           - os: macos-latest
-            asset_name: ferronix-macos-aarch64
+            asset_name: ferronix-macos-arm64
             target: aarch64-apple-darwin
 
     steps:
@@ -45,26 +42,33 @@ jobs:
         with:
           name: ferronix
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-          # Remove the line below if you have Cachix set up
           skipPush: true
       
       - name: Generate Cargo.lock
         run: nix develop -c cargo generate-lockfile
       
+      # Install cross-compiler target if specified
       - name: Install Rust Target
+        if: matrix.target != ''
         run: nix develop -c rustup target add ${{ matrix.target }}
-        
-      # Special handling for cross-compilation
-      - name: Install Cross-Compilation Dependencies (Linux ARM64)
-        if: matrix.target == 'aarch64-unknown-linux-gnu'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu
       
-      - name: Build Release Binary
+      # Build for native architecture by default
+      - name: Build Release Binary (Native)
+        if: matrix.target == ''
+        run: nix develop -c cargo build --release
+      
+      # Build for specified target if available
+      - name: Build Release Binary (Target)
+        if: matrix.target != ''
         run: nix develop -c cargo build --release --target ${{ matrix.target }}
       
-      - name: Rename Binary
+      # Copy binary with appropriate name
+      - name: Copy Native Binary
+        if: matrix.target == ''
+        run: cp target/release/ferronix ${{ matrix.asset_name }}
+        
+      - name: Copy Target Binary
+        if: matrix.target != ''
         run: cp target/${{ matrix.target }}/release/ferronix ${{ matrix.asset_name }}
         
       - name: Release
