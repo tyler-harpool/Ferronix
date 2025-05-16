@@ -27,7 +27,7 @@ jobs:
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
           # Skip this for now and uncomment once you've set up Cachix
           # skipPush: true
-      
+
       - name: Generate Cargo.lock
         run: nix develop -c cargo generate-lockfile
 
@@ -35,7 +35,7 @@ jobs:
       - name: Build with Cargo
         run: nix develop -c cargo build --release
 
-      - name: Check Flake 
+      - name: Check Flake
         run: nix flake check || echo "Flake check failed but continuing"
 
       - name: Run Tests
@@ -49,22 +49,3 @@ jobs:
 
       - name: Check Formatting
         run: nix develop -c cargo fmt --check
-
-# Uncomment to enable cross-platform builds
-#  cross-platform:
-#    name: Build on ${{ matrix.os }}
-#    runs-on: ${{ matrix.os }}
-#    strategy:
-#      matrix:
-#        os: [ubuntu-latest, macos-latest]
-#    steps:
-#      - uses: actions/checkout@v3
-#      - name: Install Nix
-#        uses: cachix/install-nix-action@v22
-#        with:
-#          extra_nix_config: |
-#            experimental-features = nix-command flakes
-#      - name: Generate Cargo.lock
-#        run: nix develop -c cargo generate-lockfile
-#      - name: Build with Cargo
-#        run: nix develop -c cargo build --release

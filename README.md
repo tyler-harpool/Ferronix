@@ -67,6 +67,24 @@ cargo run
 - **Dependencies**: OpenSSL and pkg-config preconfigured
 - **AI assistance**: Node.js and npm with claude-code and aicommits for AI assistance
 
+## Release and Versioning
+
+Ferronix follows Semantic Versioning (SemVer):
+
+- **MAJOR.MINOR.PATCH** (e.g., 1.2.3)
+- Releases are published to GitHub Releases
+- See [VERSIONING.md](VERSIONING.md) for detailed versioning guidelines
+
+To create a new release:
+
+```bash
+# Update version in Cargo.toml and flake.nix first
+git tag -a v0.1.0 -m "Release v0.1.0"
+git push origin v0.1.0
+```
+
+This will trigger the GitHub Actions release workflow to build and publish the release.
+
 ## License
 
 This project is open source and available under the [MIT License](LICENSE)

@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+  build-and-upload:
+    name: Build and Upload Release Assets
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset_name: ferronix-linux-x86_64
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            asset_name: ferronix-macos-x86_64
+            target: x86_64-apple-darwin
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Nix
+        uses: cachix/install-nix-action@v22
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v12
+        with:
+          name: ferronix
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+          # Remove the line below if you have Cachix set up
+          skipPush: true
+      
+      - name: Generate Cargo.lock
+        run: nix develop -c cargo generate-lockfile
+      
+      - name: Build Release Binary
+        run: nix develop -c cargo build --release --target ${{ matrix.target }}
+      
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./target/${{ matrix.target }}/release/ferronix
+          asset_name: ${{ matrix.asset_name }}
+          asset_content_type: application/octet-stream
