@@ -1,0 +1,216 @@
+name: Automatic Build and Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "Cargo.toml"  # Only trigger when version might have changed
+  workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  contents: write
+
+jobs:
+  check-version:
+    name: Check Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract-version.outputs.version }}
+      should_release: ${{ steps.check-tag.outputs.should_release }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Full history to check tags
+
+      - name: Extract version from Cargo.toml
+        id: extract-version
+        run: |
+          VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
+
+      - name: Check if tag exists
+        id: check-tag
+        run: |
+          VERSION="${{ steps.extract-version.outputs.version }}"
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "Version v$VERSION already has a tag, skipping release"
+            echo "should_release=false" >> $GITHUB_OUTPUT
+          else
+            echo "Version v$VERSION needs to be released"
+            echo "should_release=true" >> $GITHUB_OUTPUT
+          fi
+
+  create-tag:
+    name: Create Tag
+    needs: check-version
+    if: needs.check-version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Create tag
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git tag -a "v${{ needs.check-version.outputs.version }}" -m "Release v${{ needs.check-version.outputs.version }}"
+          git push origin "v${{ needs.check-version.outputs.version }}"
+
+  # Unix builds (Linux and macOS)
+  unix-build:
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    needs: [check-version, create-tag]
+    if: needs.check-version.outputs.should_release == 'true'
+    strategy:
+      matrix:
+        include:
+          # Linux build
+          - os: ubuntu-latest
+            asset_name: ferronix-linux-x86_64
+            executable: ferronix
+            
+          # macOS builds
+          - os: macos-latest
+            asset_name: ferronix-macos-x86_64
+            executable: ferronix
+            
+          # macOS ARM64 with cross-compilation
+          - os: macos-latest
+            asset_name: ferronix-macos-arm64
+            executable: ferronix
+            target: aarch64-apple-darwin
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: "v${{ needs.check-version.outputs.version }}"  # Checkout the tag
+      
+      - name: Install Nix
+        uses: cachix/install-nix-action@v22
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v12
+        with:
+          name: ferronix
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+          # Enable pushing to Cachix to speed up future builds
+          pushFilter: "ferronix.*"
+      
+      - name: Generate Cargo.lock
+        run: nix develop -c cargo generate-lockfile
+      
+      # Install cross-compiler target if specified
+      - name: Install Rust Target
+        if: matrix.target != ''
+        run: nix develop -c rustup target add ${{ matrix.target }}
+      
+      # Build for native architecture by default
+      - name: Build Release Binary (Native)
+        if: matrix.target == ''
+        run: nix develop -c cargo build --release
+      
+      # Build for specified target if available
+      - name: Build Release Binary (Target)
+        if: matrix.target != ''
+        run: nix develop -c cargo build --release --target ${{ matrix.target }}
+      
+      # Copy binary with appropriate name
+      - name: Copy Native Binary
+        if: matrix.target == ''
+        run: cp target/release/${{ matrix.executable }} ${{ matrix.asset_name }}
+        
+      - name: Copy Target Binary
+        if: matrix.target != ''
+        run: cp target/${{ matrix.target }}/release/${{ matrix.executable }} ${{ matrix.asset_name }}
+        
+      # Make binary executable
+      - name: Make binary executable
+        run: chmod +x ${{ matrix.asset_name }}
+        
+      - name: Upload to GitHub Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.asset_name }}
+          path: ${{ matrix.asset_name }}
+          if-no-files-found: error
+
+  # Windows build
+  windows-build:
+    name: Build for Windows
+    runs-on: windows-latest
+    needs: [check-version, create-tag]
+    if: needs.check-version.outputs.should_release == 'true'
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: "v${{ needs.check-version.outputs.version }}"  # Checkout the tag
+      
+      # Even on Windows, we can use Cachix for caching build artifacts
+      - name: Install Nix
+        uses: cachix/install-nix-action@v22
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v12
+        with:
+          name: ferronix
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+          pushFilter: "ferronix.*"
+      
+      # Now use Rust normally for building
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      
+      - name: Generate Cargo.lock
+        run: cargo generate-lockfile
+      
+      - name: Build Release Binary
+        run: cargo build --release
+      
+      - name: Copy Binary
+        shell: powershell
+        run: Copy-Item target\release\ferronix.exe -Destination ferronix-windows-x86_64.exe
+      
+      - name: Upload to GitHub Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ferronix-windows-x86_64.exe
+          path: ferronix-windows-x86_64.exe
+          if-no-files-found: error
+
+  create-release:
+    name: Create GitHub Release
+    needs: [check-version, unix-build, windows-build]
+    if: needs.check-version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      # Download all artifacts
+      - name: Download all workflow artifacts
+        uses: actions/download-artifact@v2
+        
+      # Create GitHub Release
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ferronix-linux-x86_64/ferronix-linux-x86_64
+            ferronix-macos-x86_64/ferronix-macos-x86_64
+            ferronix-macos-arm64/ferronix-macos-arm64
+            ferronix-windows-x86_64.exe/ferronix-windows-x86_64.exe
+          tag_name: v${{ needs.check-version.outputs.version }}
+          name: Release v${{ needs.check-version.outputs.version }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
