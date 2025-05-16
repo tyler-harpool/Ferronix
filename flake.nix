@@ -79,14 +79,17 @@
             export PATH=$HOME/.npm-global/bin:$PATH
             mkdir -p $HOME/.npm-global
             
-            # Update npm to latest version
-            echo "Updating npm to latest version..."
-            npm install -g npm@latest
+            # Use pinned npm version
+            echo "Using pinned npm version..."
+            # Only install if the correct version isn't already installed
+            if [ "$(npm --version)" != "11.4.0" ]; then
+              npm install -g npm@11.4.0
+            fi
             
             # Install claude-code if it's not already installed
             if ! command -v claude-code &> /dev/null; then
-              echo "Installing @anthropic-ai/claude-code globally..."
-              npm install -g @anthropic-ai/claude-code
+              echo "Installing @anthropic-ai/claude-code@0.2.113 globally..."
+              npm install -g @anthropic-ai/claude-code@0.2.113
               echo "Claude Code installed successfully!"
             fi
             
