@@ -24,18 +24,30 @@
           extensions = [ "rust-src" "rust-analyzer" "clippy" "rustfmt" ];
         };
         
-        # Build the Rust application
-        ferronixBin = pkgs.rustPlatform.buildRustPackage {
-          pname = "ferronix";
-          version = "0.1.0";
-          src = ./.;
+        # For development environments, prefer to use Cargo directly
+        # This simplified approach is better for dev environments
+        ferronixScript = pkgs.writeShellScriptBin "ferronix" ''
+          #!/bin/sh
+          # Print args
+          if [ $# -gt 0 ]; then
+            echo "Running with arguments: $@"
+            cargo run -- "$@"
+          else
+            cargo run
+          fi
+        '';
           
-          # Use the default lockFile approach
-          cargoSha256 = pkgs.lib.fakeSha256;
-          
-          buildInputs = [ pkgs.openssl.dev ];
-          nativeBuildInputs = [ pkgs.pkg-config ];
-        };
+        # Full Nix package - disabled for now to simplify development
+        # Uncomment when ready for proper packaging
+        # ferronixBin = pkgs.rustPlatform.buildRustPackage {
+        #   pname = "ferronix";
+        #   version = "0.1.0";
+        #   src = ./.;
+        #   doCheck = false;
+        #   cargoLock.lockFile = ./Cargo.lock;
+        #   buildInputs = [ pkgs.openssl.dev ];
+        #   nativeBuildInputs = [ pkgs.pkg-config ];
+        # };
 
       in {
         devShells.default = pkgs.mkShell {
@@ -101,12 +113,12 @@
           OPENSSL_LIB_DIR = "${pkgs.openssl.out}/lib";
         };
         
-        # Default package is the Rust binary
-        packages.default = ferronixBin;
+        # Default package is the simple script wrapper
+        packages.default = ferronixScript;
         
         # Default app
         apps.default = flake-utils.lib.mkApp {
-          drv = ferronixBin;
+          drv = ferronixScript;
         };
       }
     );
