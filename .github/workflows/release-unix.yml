@@ -75,6 +75,10 @@ jobs:
         if: matrix.target != ''
         run: cp target/${{ matrix.target }}/release/${{ matrix.executable }} ${{ matrix.asset_name }}
         
+      # Make binary executable
+      - name: Make binary executable
+        run: chmod +x ${{ matrix.asset_name }}
+        
       - name: Release
         uses: softprops/action-gh-release@v1
         with:

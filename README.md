@@ -83,6 +83,25 @@ This will build and publish binaries for:
 - macOS ARM64 (Apple Silicon)
 - Windows x86_64
 
+## Run OSX
+
+We don't sign the OSX binary, so OSX will complain that it can't verify the signature. First, review the code to ensure that nothing sketch is going on. Second, you can run these commands:
+
+- xattr -dr com.apple.quarantine ferronix-macos-arm64
+- ./ferronix-macos-arm64
+
+You should see something like this:
+```
+Hello, World!
+
+JSON data:
+{
+  "message": "Hello, World!",
+  "timestamp": "2025-05-16T16:58:10.005621+00:00"
+}
+2025-05-16T16:58:10.005626Z  INFO ferronix: Application completed successfully
+```
+
 See [VERSIONING.md](VERSIONING.md) for more details.
 
 ## License
