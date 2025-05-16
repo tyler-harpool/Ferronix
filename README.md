@@ -70,24 +70,59 @@ cargo run
 
 ## Release Process
 
-Ferronix uses GitHub Actions to automatically build binaries for multiple platforms when you merge to the main branch:
+Ferronix uses GitHub Actions for automated cross-platform releases with a streamlined process.
 
-1. Just update the version in `Cargo.toml`
-2. Merge your changes to the main branch
-3. GitHub Actions will automatically create a tag and release
+### Automated Releases
 
-You can also trigger releases manually by creating a tag:
+When you update the version in `Cargo.toml` and merge to the main branch:
 
-```bash
-git tag -a v0.1.0 -m "Release v0.1.0"
-git push origin v0.1.0
-```
+1. Update the version in `Cargo.toml` (e.g., `version = "0.1.9"`)
+2. Commit and merge your changes to the main branch
+3. The `auto-release.yml` workflow automatically:
+   - Detects the version change
+   - Creates a git tag (e.g., `v0.1.9`)
+   - Triggers the platform-specific build workflows
 
-This will build and publish binaries for:
+### Manual Releases
+
+You can trigger releases in three ways:
+
+1. **Direct tag creation**:
+   ```bash
+   git tag -a v0.1.0 -m "Release v0.1.0"
+   git push origin v0.1.0
+   ```
+
+2. **Using the GitHub UI**:
+   - Go to Actions → "Automatic Release" workflow
+   - Click "Run workflow"
+   - Enter the version number (without "v" prefix)
+   - Click "Run workflow"
+
+3. **Creating a GitHub Release directly**:
+   - Go to Releases → "Draft new release"
+   - Create a new tag (must be in format `v*.*.*`)
+   - Publish the release
+
+### Required Secrets
+
+For the automated release process to work properly, the repository needs:
+
+- `PAT_TOKEN`: A Personal Access Token with "workflow" permission
+  - This allows the release workflow to trigger other workflows
+  - Without this, GitHub prevents workflows from triggering other workflows
+
+- `CACHIX_AUTH_TOKEN`: For Cachix integration to speed up builds
+
+### Build Outputs
+
+Each release automatically builds binaries for:
 - Linux x86_64
 - macOS x86_64 (Intel)
 - macOS ARM64 (Apple Silicon)
 - Windows x86_64
+
+These are published to the GitHub release page as downloadable assets.
 
 ## Run OSX
 
