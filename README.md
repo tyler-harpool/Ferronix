@@ -66,6 +66,7 @@ cargo run
 - **Development tools**: cargo-audit, cargo-watch, cargo-expand
 - **Dependencies**: OpenSSL and pkg-config preconfigured
 - **AI assistance**: Node.js and npm with claude-code and aicommits for AI assistance
+- **Binary caching**: [Cachix](https://cachix.org/) integration for faster builds ([setup guide](CACHIX-SETUP.md))
 
 ## Release Process
 

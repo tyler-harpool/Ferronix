@@ -46,7 +46,9 @@ jobs:
         with:
           name: ferronix
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-          skipPush: true
+          # Enable pushing to Cachix to speed up future builds
+          pushFilter: "ferronix.*"
+          # Create a GitHub secret CACHIX_AUTH_TOKEN from cachix.org
       
       - name: Generate Cargo.lock
         run: nix develop -c cargo generate-lockfile
