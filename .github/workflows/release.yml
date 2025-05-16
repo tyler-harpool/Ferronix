@@ -5,27 +5,12 @@ on:
     tags:
       - 'v*.*.*'
 
-jobs:
-  create-release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
+permissions:
+  contents: write # This is required for creating releases and uploading assets
 
-  build-and-upload:
-    name: Build and Upload Release Assets
-    needs: create-release
+jobs:
+  build-and-release:
+    name: Build and Release
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -69,9 +54,6 @@ jobs:
       - name: Install Rust Target
         run: nix develop -c rustup target add ${{ matrix.target }}
         
-      - name: Build Release Binary
-        run: nix develop -c cargo build --release --target ${{ matrix.target }}
-      
       # Special handling for cross-compilation
       - name: Install Cross-Compilation Dependencies (Linux ARM64)
         if: matrix.target == 'aarch64-unknown-linux-gnu'
@@ -79,12 +61,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu
       
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Release Binary
+        run: nix develop -c cargo build --release --target ${{ matrix.target }}
+      
+      - name: Rename Binary
+        run: cp target/${{ matrix.target }}/release/ferronix ${{ matrix.asset_name }}
+        
+      - name: Release
+        uses: softprops/action-gh-release@v1
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./target/${{ matrix.target }}/release/ferronix
-          asset_name: ${{ matrix.asset_name }}
-          asset_content_type: application/octet-stream
+          name: Release ${{ github.ref_name }}
+          files: ${{ matrix.asset_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
