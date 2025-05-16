@@ -1,6 +1,7 @@
 name: Automatic Release
 
 on:
+  workflow_dispatch:  # Allow manual triggering
   push:
     branches:
       - main

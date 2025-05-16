@@ -82,9 +82,8 @@ jobs:
         run: chmod +x ${{ matrix.asset_name }}
         
       - name: Upload to GitHub Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.asset_name }}
           path: ${{ matrix.asset_name }}
           if-no-files-found: error
-          retention-days: 7
