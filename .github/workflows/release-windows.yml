@@ -16,6 +16,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Extract Cargo package name
+        id: cargo-name
+        shell: bash
+        run: |
+          PACKAGE_NAME=$(grep '^name = ' Cargo.toml | head -n 1 | sed 's/name = "\(.*\)"/\1/')
+          echo "package_name=$PACKAGE_NAME" >> $GITHUB_ENV
+          echo "Package name from Cargo.toml: $PACKAGE_NAME"
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -29,7 +37,7 @@ jobs:
 
       - name: Copy Binary
         shell: powershell
-        run: Copy-Item target\release\${{ github.event.repository.name }}.exe -Destination ${{ github.event.repository.name }}-windows-x86_64.exe
+        run: Copy-Item target\release\${{ env.package_name }}.exe -Destination ${{ github.event.repository.name }}-windows-x86_64.exe
 
       - name: Release
         uses: softprops/action-gh-release@v1
