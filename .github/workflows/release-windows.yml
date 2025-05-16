@@ -1,0 +1,41 @@
+name: Release Windows Binary
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write # This is required for creating releases and uploading assets
+
+jobs:
+  # Windows build
+  windows-build:
+    name: Build for Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      
+      - name: Generate Cargo.lock
+        run: cargo generate-lockfile
+      
+      - name: Build Release Binary
+        run: cargo build --release
+      
+      - name: Copy Binary
+        shell: powershell
+        run: Copy-Item target\release\ferronix.exe -Destination ferronix-windows-x86_64.exe
+      
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ github.ref_name }}
+          files: ferronix-windows-x86_64.exe
+          draft: false
+          prerelease: false
+          generate_release_notes: true

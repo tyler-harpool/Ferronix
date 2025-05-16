@@ -1,4 +1,4 @@
-name: Release
+name: Release Unix Binaries
 
 on:
   push:
@@ -9,8 +9,9 @@ permissions:
   contents: write # This is required for creating releases and uploading assets
 
 jobs:
-  build-and-release:
-    name: Build and Release
+  # Unix builds (Linux and macOS)
+  unix-build:
+    name: Build for ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -30,11 +31,6 @@ jobs:
             asset_name: ferronix-macos-arm64
             executable: ferronix
             target: aarch64-apple-darwin
-            
-          # Windows build
-          - os: windows-latest
-            asset_name: ferronix-windows-x86_64.exe
-            executable: ferronix.exe
 
     steps:
       - uses: actions/checkout@v3
@@ -70,20 +66,14 @@ jobs:
         if: matrix.target != ''
         run: nix develop -c cargo build --release --target ${{ matrix.target }}
       
-      # Copy binary with appropriate name (Unix)
-      - name: Copy Native Binary (Unix)
-        if: matrix.target == '' && runner.os != 'Windows'
+      # Copy binary with appropriate name
+      - name: Copy Native Binary
+        if: matrix.target == ''
         run: cp target/release/${{ matrix.executable }} ${{ matrix.asset_name }}
         
-      - name: Copy Target Binary (Unix)
-        if: matrix.target != '' && runner.os != 'Windows'
+      - name: Copy Target Binary
+        if: matrix.target != ''
         run: cp target/${{ matrix.target }}/release/${{ matrix.executable }} ${{ matrix.asset_name }}
-        
-      # Copy binary with appropriate name (Windows)
-      - name: Copy Native Binary (Windows)
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: Copy-Item target/release/${{ matrix.executable }} -Destination ${{ matrix.asset_name }}
         
       - name: Release
         uses: softprops/action-gh-release@v1

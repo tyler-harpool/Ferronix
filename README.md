@@ -67,23 +67,23 @@ cargo run
 - **Dependencies**: OpenSSL and pkg-config preconfigured
 - **AI assistance**: Node.js and npm with claude-code and aicommits for AI assistance
 
-## Release and Versioning
+## Release Process
 
-Ferronix follows Semantic Versioning (SemVer):
-
-- **MAJOR.MINOR.PATCH** (e.g., 1.2.3)
-- Releases are published to GitHub Releases
-- See [VERSIONING.md](VERSIONING.md) for detailed versioning guidelines
-
-To create a new release:
+Ferronix uses GitHub Actions to automatically build binaries for multiple platforms when you create a new tag:
 
 ```bash
-# Update version in Cargo.toml and flake.nix first
+# Update version in Cargo.toml first
 git tag -a v0.1.0 -m "Release v0.1.0"
 git push origin v0.1.0
 ```
 
-This will trigger the GitHub Actions release workflow to build and publish the release.
+This will build and publish binaries for:
+- Linux x86_64
+- macOS x86_64 (Intel)
+- macOS ARM64 (Apple Silicon)
+- Windows x86_64
+
+See [VERSIONING.md](VERSIONING.md) for more details.
 
 ## License
 
