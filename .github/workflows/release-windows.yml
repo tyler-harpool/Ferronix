@@ -46,11 +46,10 @@ jobs:
         shell: powershell
         run: Copy-Item target\release\ferronix.exe -Destination ferronix-windows-x86_64.exe
       
-      - name: Release
-        uses: softprops/action-gh-release@v1
+      - name: Upload to GitHub Artifact
+        uses: actions/upload-artifact@v3
         with:
-          name: Release ${{ github.ref_name }}
-          files: ferronix-windows-x86_64.exe
-          draft: false
-          prerelease: false
-          generate_release_notes: true
+          name: ferronix-windows-x86_64.exe
+          path: ferronix-windows-x86_64.exe
+          if-no-files-found: error
+          retention-days: 7

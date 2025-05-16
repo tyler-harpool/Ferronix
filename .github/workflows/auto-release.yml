@@ -7,6 +7,9 @@ on:
     paths:
       - 'Cargo.toml'  # Only trigger when version might have changed
 
+permissions:
+  contents: write  # This is required for creating releases
+
 jobs:
   check-version:
     name: Check Version and Create Release
@@ -50,13 +53,14 @@ jobs:
         
       - name: Create Release
         id: create_release
-        uses: softprops/action-gh-release@v1
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ needs.check-version.outputs.version }}
-          name: Release v${{ needs.check-version.outputs.version }}
+          release_name: Release v${{ needs.check-version.outputs.version }}
           draft: false
           prerelease: false
-          generate_release_notes: true
         
       - name: Wait for release workflows to complete
         run: |
