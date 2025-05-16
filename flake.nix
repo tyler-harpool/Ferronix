@@ -29,10 +29,13 @@
           pname = "ferronix";
           version = "0.1.0";
           src = ./.;
+          
+          # More flexible way to handle cargo lock
           cargoLock = {
-            lockFile = ./Cargo.lock;
-            allowBuiltinFetchGit = true;
+            lockFilePath = ./Cargo.lock;
+            outputHashes = {};
           };
+          
           buildInputs = [ pkgs.openssl.dev ];
           nativeBuildInputs = [ pkgs.pkg-config ];
         };
