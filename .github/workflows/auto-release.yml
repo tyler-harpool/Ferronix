@@ -1,0 +1,60 @@
+name: Automatic Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Cargo.toml'  # Only trigger when version might have changed
+
+jobs:
+  check-version:
+    name: Check Version and Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract-version.outputs.version }}
+      should_release: ${{ steps.check-tag.outputs.should_release }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Full history to check tags
+
+      - name: Extract version from Cargo.toml
+        id: extract-version
+        run: |
+          VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
+
+      - name: Check if tag exists
+        id: check-tag
+        run: |
+          VERSION="${{ steps.extract-version.outputs.version }}"
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "Version v$VERSION already has a tag, skipping release"
+            echo "should_release=false" >> $GITHUB_OUTPUT
+          else
+            echo "Version v$VERSION needs to be released"
+            echo "should_release=true" >> $GITHUB_OUTPUT
+          fi
+
+  create-tag-and-release:
+    name: Create Tag and Trigger Release
+    needs: check-version
+    if: needs.check-version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        
+      - name: Create and push tag
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git tag -a "v${{ needs.check-version.outputs.version }}" -m "Release v${{ needs.check-version.outputs.version }}"
+          git push origin "v${{ needs.check-version.outputs.version }}"
+        
+      - name: Wait for release workflows to complete
+        run: |
+          echo "Tag v${{ needs.check-version.outputs.version }} created and pushed"
+          echo "Release workflows have been triggered and will build binaries"
+          echo "You can monitor their progress in the Actions tab"

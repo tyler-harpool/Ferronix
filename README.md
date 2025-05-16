@@ -70,10 +70,15 @@ cargo run
 
 ## Release Process
 
-Ferronix uses GitHub Actions to automatically build binaries for multiple platforms when you create a new tag:
+Ferronix uses GitHub Actions to automatically build binaries for multiple platforms when you merge to the main branch:
+
+1. Just update the version in `Cargo.toml`
+2. Merge your changes to the main branch
+3. GitHub Actions will automatically create a tag and release
+
+You can also trigger releases manually by creating a tag:
 
 ```bash
-# Update version in Cargo.toml first
 git tag -a v0.1.0 -m "Release v0.1.0"
 git push origin v0.1.0
 ```

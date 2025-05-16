@@ -2,6 +2,8 @@
 
 This guide explains how to set up [Cachix](https://cachix.org/) for Ferronix to speed up builds and improve CI/CD reliability.
 
+**Note:** We use Cachix for both Unix (Linux/macOS) and Windows builds, providing a consistent caching solution across all platforms.
+
 ## What is Cachix?
 
 Cachix is a binary cache for Nix. It stores the results of Nix builds so they don't have to be rebuilt from scratch each time, significantly speeding up builds in CI and for developers.
@@ -12,6 +14,7 @@ Cachix is a binary cache for Nix. It stores the results of Nix builds so they do
 2. **Consistent Environments**: Everyone uses the exact same binaries across CI and development
 3. **Reduced Resource Usage**: Less CPU and memory needed for builds
 4. **Reliable Releases**: Release builds can reuse CI-built components
+5. **Cross-Platform**: Works on Linux, macOS, and Windows builds
 
 ## Setup Instructions
 
