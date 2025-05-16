@@ -30,7 +30,9 @@ git push origin v0.1.0
 
 Pushing a tag that matches the pattern `v*.*.*` will trigger the GitHub Actions release workflow, which:
 1. Creates a GitHub Release for the tag
-2. Builds release binaries for multiple platforms (Linux and macOS)
+2. Builds release binaries for multiple platforms and architectures:
+   - Linux (x86_64 and ARM64/aarch64)
+   - macOS (x86_64 Intel and ARM64/Apple Silicon M1/M2/M3/M4)
 3. Attaches the binaries to the GitHub Release
 
 ## Testing Pre-releases
