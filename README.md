@@ -1,11 +1,33 @@
 # Ferronix
 
-A robust Rust application with a reproducible development environment using Nix and direnv. Ferronix combines the power of Rust (ferrous/iron) with Nix for a reliable, consistent development experience.
+A streamlined Rust application with a reproducible development environment using Nix Flakes. Ferronix combines the power of Rust (ferrous/iron) with Nix for a reliable, consistent, and reproducible development experience across platforms.
+
+## Why Nix Flakes for Rust Development?
+
+### The Nix Approach
+
+[Nix](https://nixos.org/) is a powerful package manager that enables:
+- **Reproducible builds**: Identical environments every time
+- **Hermetic packaging**: Isolated development environments with precise dependencies
+- **Cross-platform consistency**: Works on Linux, macOS, and WSL
+
+### Nix Flakes vs Traditional Nix
+
+Flakes are a more modern, improved approach to Nix:
+
+- **Reproducibility**: Flakes use lockfiles (`flake.lock`) to pin exact versions of every dependency
+- **Portability**: Work seamlessly across different machines with the same results
+- **Simplified interfaces**: Clear, consistent commands (`nix develop`, `nix build`)
+- **Isolated environments**: Each project has its own contained dependencies
+- **Faster development cycles**: Better caching of dependencies
+- **IDE integration**: Better support for VS Code, Vim, and other editors
+
+Traditional Nix requires `shell.nix` files and uses `nix-shell`, making it less deterministic and more complex to configure. Flakes provide a standardized structure that eliminates many edge cases.
 
 ## Prerequisites
 
-- [Nix with Flakes enabled](https://nixos.org/download.html) (for the reproducible development environment)
-- [direnv](https://direnv.net/) for automatic environment loading
+- [Nix with Flakes enabled](https://nixos.org/download.html)
+- (Optional) [direnv](https://direnv.net/) for automatic environment loading
 
 ## Getting Started
 
@@ -21,38 +43,30 @@ cd ferronix
 direnv allow  # Only needed first time or after .envrc changes
 ```
 
-You'll see a fun welcome message from cowsay when the environment activates:
-
-3. Build the application:
+3. Build and run the application:
 
 ```bash
+# Build
 cargo build
-```
 
-4. Run the application:
-
-```bash
+# Run
 cargo run
 ```
 
 ## Project Structure
 
-- `src/main.rs`: The main entry point for the application
-- `Cargo.toml`: Project configuration and dependencies
-- `flake.nix`: Nix Flake configuration for reproducible development environment
-- `shell.nix`: Alternative Nix configuration for non-flake users
-- `.envrc`: direnv configuration for automatic environment loading
-- `welcome.sh`: Script to display the cowsay welcome message on demand
+- `src/main.rs` - Main Rust application
+- `Cargo.toml` - Rust package configuration
+- `flake.nix` - Nix Flake definition (the core of our reproducible environment)
+- `.envrc` - direnv configuration for automatic environment loading
 
-## Features
+## Development Environment Features
 
-The development environment includes:
-
-- Rust toolchain with rust-src, rust-analyzer, clippy, and rustfmt
-- Cargo tools: cargo-audit, cargo-watch, cargo-expand
-- OpenSSL and pkg-config for building dependencies
-- Cowsay for a fun welcome message
+- **Rust toolchain**: Complete toolchain with rust-analyzer, clippy, and rustfmt
+- **Development tools**: cargo-audit, cargo-watch, cargo-expand
+- **Dependencies**: OpenSSL and pkg-config preconfigured
+- **AI assistance**: Node.js and npm with claude-code and aicommits for AI assistance
 
 ## License
 
-This project is open source and available under the [MIT License](LICENSE).
+This project is open source and available under the [MIT License](LICENSE)
