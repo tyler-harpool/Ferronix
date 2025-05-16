@@ -29,13 +29,13 @@ jobs:
 
       - name: Copy Binary
         shell: powershell
-        run: Copy-Item target\release\ferronix.exe -Destination ferronix-windows-x86_64.exe
+        run: Copy-Item target\release\${{ github.event.repository.name }}.exe -Destination ${{ github.event.repository.name }}-windows-x86_64.exe
 
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           name: Release ${{ github.ref_name }}
-          files: ferronix-windows-x86_64.exe
+          files: ${{ github.event.repository.name }}-windows-x86_64.exe
           draft: false
           prerelease: false
           generate_release_notes: true

@@ -18,18 +18,18 @@ jobs:
         include:
           # Linux build
           - os: ubuntu-latest
-            asset_name: ferronix-linux-x86_64
-            executable: ferronix
+            asset_name: ${{ github.event.repository.name }}-linux-x86_64
+            executable: ${{ github.event.repository.name }}
 
           # macOS builds
           - os: macos-latest
-            asset_name: ferronix-macos-x86_64
-            executable: ferronix
+            asset_name: ${{ github.event.repository.name }}-macos-x86_64
+            executable: ${{ github.event.repository.name }}
 
           # macOS ARM64 with cross-compilation
           - os: macos-latest
-            asset_name: ferronix-macos-arm64
-            executable: ferronix
+            asset_name: ${{ github.event.repository.name }}-macos-arm64
+            executable: ${{ github.event.repository.name }}
             target: aarch64-apple-darwin
 
     steps:
@@ -44,10 +44,10 @@ jobs:
       - name: Setup Cachix
         uses: cachix/cachix-action@v12
         with:
-          name: ferronix
+          name: ${{ github.event.repository.name }}
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
           # Enable pushing to Cachix to speed up future builds
-          pushFilter: "ferronix.*"
+          pushFilter: "${{ github.event.repository.name }}.*"
           # Create a GitHub secret CACHIX_AUTH_TOKEN from cachix.org
 
       - name: Generate Cargo.lock
