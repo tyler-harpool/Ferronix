@@ -76,8 +76,8 @@ jobs:
   unix-build:
     name: Build for ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    needs: [check-version, create-tag]
-    if: always() && needs.create-tag.result != 'failed'
+    needs: [prepare]
+    if: always() && needs.prepare.result != 'failed'
     strategy:
       matrix:
         include:
@@ -98,9 +98,9 @@ jobs:
             target: aarch64-apple-darwin
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
-          ref: "v${{ needs.check-version.outputs.version }}"  # Checkout the tag
+          ref: "v${{ needs.prepare.outputs.version }}"  # Checkout the tag
       
       - name: Install Nix
         uses: cachix/install-nix-action@v22
@@ -148,7 +148,7 @@ jobs:
         run: chmod +x ${{ matrix.asset_name }}
         
       - name: Upload to GitHub Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.asset_name }}
           path: ${{ matrix.asset_name }}
@@ -158,12 +158,12 @@ jobs:
   windows-build:
     name: Build for Windows
     runs-on: windows-latest
-    needs: [check-version, create-tag]
-    if: always() && needs.create-tag.result != 'failed'
+    needs: [prepare]
+    if: always() && needs.prepare.result != 'failed'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
-          ref: "v${{ needs.check-version.outputs.version }}"  # Checkout the tag
+          ref: "v${{ needs.prepare.outputs.version }}"  # Checkout the tag
       
       # Even on Windows, we can use Cachix for caching build artifacts
       - name: Install Nix
@@ -196,7 +196,7 @@ jobs:
         run: Copy-Item target\release\ferronix.exe -Destination ferronix-windows-x86_64.exe
       
       - name: Upload to GitHub Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ferronix-windows-x86_64.exe
           path: ferronix-windows-x86_64.exe
@@ -204,15 +204,15 @@ jobs:
 
   create-release:
     name: Create GitHub Release
-    needs: [check-version, unix-build, windows-build]
+    needs: [prepare, unix-build, windows-build]
     if: always() && needs.unix-build.result != 'failed' && needs.windows-build.result != 'failed'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       # Download all artifacts
       - name: Download all workflow artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         
       # Create GitHub Release
       - name: Create GitHub Release
@@ -224,8 +224,8 @@ jobs:
             ferronix-macos-x86_64/ferronix-macos-x86_64
             ferronix-macos-arm64/ferronix-macos-arm64
             ferronix-windows-x86_64.exe/ferronix-windows-x86_64.exe
-          tag_name: v${{ needs.check-version.outputs.version }}
-          name: Release v${{ needs.check-version.outputs.version }}
+          tag_name: v${{ needs.prepare.outputs.version }}
+          name: Release v${{ needs.prepare.outputs.version }}
           draft: false
           prerelease: false
           generate_release_notes: true
