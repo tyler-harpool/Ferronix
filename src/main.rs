@@ -23,13 +23,10 @@ struct Args {
 
 fn setup_logging(verbose: bool) {
     let level = if verbose { Level::DEBUG } else { Level::INFO };
-    
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(level)
-        .finish();
-    
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Failed to set tracing subscriber");
+
+    let subscriber = FmtSubscriber::builder().with_max_level(level).finish();
+
+    tracing::subscriber::set_global_default(subscriber).expect("Failed to set tracing subscriber");
 }
 
 #[tokio::main]
@@ -58,7 +55,7 @@ async fn main() -> Result<()> {
         "message": format!("Hello, {}!", name),
         "timestamp": chrono::Utc::now().to_rfc3339(),
     });
-    
+
     println!("\nJSON data:\n{}", serde_json::to_string_pretty(&data)?);
 
     info!("Application completed successfully");
