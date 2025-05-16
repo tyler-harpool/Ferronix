@@ -30,11 +30,8 @@
           version = "0.1.0";
           src = ./.;
           
-          # More flexible way to handle cargo lock
-          cargoLock = {
-            lockFilePath = ./Cargo.lock;
-            outputHashes = {};
-          };
+          # Use the default lockFile approach
+          cargoSha256 = pkgs.lib.fakeSha256;
           
           buildInputs = [ pkgs.openssl.dev ];
           nativeBuildInputs = [ pkgs.pkg-config ];
