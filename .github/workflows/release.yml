@@ -18,15 +18,23 @@ jobs:
           # Linux build
           - os: ubuntu-latest
             asset_name: ferronix-linux-x86_64
+            executable: ferronix
             
           # macOS builds
           - os: macos-latest
             asset_name: ferronix-macos-x86_64
+            executable: ferronix
             
-          # Optional: Add macOS ARM64 with cross-compilation
+          # macOS ARM64 with cross-compilation
           - os: macos-latest
             asset_name: ferronix-macos-arm64
+            executable: ferronix
             target: aarch64-apple-darwin
+            
+          # Windows build
+          - os: windows-latest
+            asset_name: ferronix-windows-x86_64.exe
+            executable: ferronix.exe
 
     steps:
       - uses: actions/checkout@v3
@@ -62,14 +70,20 @@ jobs:
         if: matrix.target != ''
         run: nix develop -c cargo build --release --target ${{ matrix.target }}
       
-      # Copy binary with appropriate name
-      - name: Copy Native Binary
-        if: matrix.target == ''
-        run: cp target/release/ferronix ${{ matrix.asset_name }}
+      # Copy binary with appropriate name (Unix)
+      - name: Copy Native Binary (Unix)
+        if: matrix.target == '' && runner.os != 'Windows'
+        run: cp target/release/${{ matrix.executable }} ${{ matrix.asset_name }}
         
-      - name: Copy Target Binary
-        if: matrix.target != ''
-        run: cp target/${{ matrix.target }}/release/ferronix ${{ matrix.asset_name }}
+      - name: Copy Target Binary (Unix)
+        if: matrix.target != '' && runner.os != 'Windows'
+        run: cp target/${{ matrix.target }}/release/${{ matrix.executable }} ${{ matrix.asset_name }}
+        
+      # Copy binary with appropriate name (Windows)
+      - name: Copy Native Binary (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: Copy-Item target/release/${{ matrix.executable }} -Destination ${{ matrix.asset_name }}
         
       - name: Release
         uses: softprops/action-gh-release@v1
