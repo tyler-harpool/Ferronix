@@ -1,6 +1,6 @@
 [package]
 name = "ferronix"
-version = "0.2.1"
+version = "0.2.3"
 edition = "2021"
 authors = ["Tyler Harpool <tylerharpool@gmail.com>"]
 description = "A simple Rust application with Nix integration"
