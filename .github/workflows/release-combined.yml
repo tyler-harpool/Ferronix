@@ -1,10 +1,12 @@
-name: Automatic Build and Release
+name: Automatic Release Trigger
 
 on:
   push:
-    tags:
-      - 'v*.*.*'  # Trigger on version tags
-  workflow_dispatch:  # Allow manual triggering
+    branches:
+      - main
+    paths:
+      - 'Cargo.toml'
+  workflow_dispatch:
     inputs:
       version:
         description: "Version to create release for (without v prefix)"
@@ -15,24 +17,22 @@ permissions:
   contents: write
 
 jobs:
-  prepare:
+  prepare-release:
     name: Prepare Release
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.get-version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      # For tag-based triggers
-      - name: Get version from tag
-        id: get-version-from-tag
+      
+      # For automatic triggers from Cargo.toml changes
+      - name: Check version from Cargo.toml
+        id: get-version-from-cargo
         if: github.event_name == 'push'
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          VERSION=$(grep '^version = ' Cargo.toml | head -n 1 | sed 's/version = "\(.*\)"/\1/')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Using version from tag: $VERSION"
+          echo "Using version from Cargo.toml: $VERSION"
 
       # For manual triggers
       - name: Get version from input
@@ -48,16 +48,15 @@ jobs:
         id: get-version
         run: |
           if [ "${{ github.event_name }}" == "push" ]; then
-            VERSION="${{ steps.get-version-from-tag.outputs.version }}"
+            VERSION="${{ steps.get-version-from-cargo.outputs.version }}"
           else
             VERSION="${{ steps.get-version-from-input.outputs.version }}"
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Using version: $VERSION"
 
-      # Create tag if running manually
-      - name: Create Tag
-        if: github.event_name == 'workflow_dispatch'
+      # Create tag and push it to trigger the release workflows
+      - name: Create and Push Tag
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
@@ -71,161 +70,3 @@ jobs:
             git tag -a "v$VERSION" -m "Release v$VERSION"
             git push origin "v$VERSION" || echo "Failed to push tag, it may already exist"
           fi
-
-  # Unix builds (Linux and macOS)
-  unix-build:
-    name: Build for ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    needs: [prepare]
-    if: always() && needs.prepare.result != 'failed'
-    strategy:
-      matrix:
-        include:
-          # Linux build
-          - os: ubuntu-latest
-            asset_name: ferronix-linux-x86_64
-            executable: ferronix
-            
-          # macOS builds
-          - os: macos-latest
-            asset_name: ferronix-macos-x86_64
-            executable: ferronix
-            
-          # macOS ARM64 with cross-compilation
-          - os: macos-latest
-            asset_name: ferronix-macos-arm64
-            executable: ferronix
-            target: aarch64-apple-darwin
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: "v${{ needs.prepare.outputs.version }}"  # Checkout the tag
-      
-      - name: Install Nix
-        uses: cachix/install-nix-action@v22
-        with:
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      
-      - name: Setup Cachix
-        uses: cachix/cachix-action@v12
-        with:
-          name: ferronix
-          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-          # Enable pushing to Cachix to speed up future builds
-          pushFilter: "ferronix.*"
-      
-      - name: Generate Cargo.lock
-        run: nix develop -c cargo generate-lockfile
-      
-      # Install cross-compiler target if specified
-      - name: Install Rust Target
-        if: matrix.target != ''
-        run: nix develop -c rustup target add ${{ matrix.target }}
-      
-      # Build for native architecture by default
-      - name: Build Release Binary (Native)
-        if: matrix.target == ''
-        run: nix develop -c cargo build --release
-      
-      # Build for specified target if available
-      - name: Build Release Binary (Target)
-        if: matrix.target != ''
-        run: nix develop -c cargo build --release --target ${{ matrix.target }}
-      
-      # Copy binary with appropriate name
-      - name: Copy Native Binary
-        if: matrix.target == ''
-        run: cp target/release/${{ matrix.executable }} ${{ matrix.asset_name }}
-        
-      - name: Copy Target Binary
-        if: matrix.target != ''
-        run: cp target/${{ matrix.target }}/release/${{ matrix.executable }} ${{ matrix.asset_name }}
-        
-      # Make binary executable
-      - name: Make binary executable
-        run: chmod +x ${{ matrix.asset_name }}
-        
-      - name: Upload to GitHub Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ matrix.asset_name }}
-          path: ${{ matrix.asset_name }}
-          if-no-files-found: error
-
-  # Windows build
-  windows-build:
-    name: Build for Windows
-    runs-on: windows-latest
-    needs: [prepare]
-    if: always() && needs.prepare.result != 'failed'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: "v${{ needs.prepare.outputs.version }}"  # Checkout the tag
-      
-      # Even on Windows, we can use Cachix for caching build artifacts
-      - name: Install Nix
-        uses: cachix/install-nix-action@v22
-        with:
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      
-      - name: Setup Cachix
-        uses: cachix/cachix-action@v12
-        with:
-          name: ferronix
-          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-          pushFilter: "ferronix.*"
-      
-      # Now use Rust normally for building
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-      
-      - name: Generate Cargo.lock
-        run: cargo generate-lockfile
-      
-      - name: Build Release Binary
-        run: cargo build --release
-      
-      - name: Copy Binary
-        shell: powershell
-        run: Copy-Item target\release\ferronix.exe -Destination ferronix-windows-x86_64.exe
-      
-      - name: Upload to GitHub Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: ferronix-windows-x86_64.exe
-          path: ferronix-windows-x86_64.exe
-          if-no-files-found: error
-
-  create-release:
-    name: Create GitHub Release
-    needs: [prepare, unix-build, windows-build]
-    if: always() && needs.unix-build.result != 'failed' && needs.windows-build.result != 'failed'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      # Download all artifacts
-      - name: Download all workflow artifacts
-        uses: actions/download-artifact@v3
-        
-      # Create GitHub Release
-      - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            ferronix-linux-x86_64/ferronix-linux-x86_64
-            ferronix-macos-x86_64/ferronix-macos-x86_64
-            ferronix-macos-arm64/ferronix-macos-arm64
-            ferronix-windows-x86_64.exe/ferronix-windows-x86_64.exe
-          tag_name: v${{ needs.prepare.outputs.version }}
-          name: Release v${{ needs.prepare.outputs.version }}
-          draft: false
-          prerelease: false
-          generate_release_notes: true
