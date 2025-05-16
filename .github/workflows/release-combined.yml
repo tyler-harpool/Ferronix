@@ -2,68 +2,74 @@ name: Automatic Build and Release
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - "Cargo.toml"  # Only trigger when version might have changed
+    tags:
+      - 'v*.*.*'  # Trigger on version tags
   workflow_dispatch:  # Allow manual triggering
+    inputs:
+      version:
+        description: "Version to create release for (without v prefix)"
+        required: true
+        default: "0.1.0"
 
 permissions:
   contents: write
 
 jobs:
-  check-version:
-    name: Check Version
+  prepare:
+    name: Prepare Release
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.extract-version.outputs.version }}
-      should_release: ${{ steps.check-tag.outputs.should_release }}
+      version: ${{ steps.get-version.outputs.version }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history to check tags
+          fetch-depth: 0
 
-      - name: Extract version from Cargo.toml
-        id: extract-version
+      # For tag-based triggers
+      - name: Get version from tag
+        id: get-version-from-tag
+        if: github.event_name == 'push'
         run: |
-          VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          VERSION=${GITHUB_REF#refs/tags/v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Detected version: $VERSION"
+          echo "Using version from tag: $VERSION"
 
-      - name: Check if tag exists
-        id: check-tag
+      # For manual triggers
+      - name: Get version from input
+        id: get-version-from-input
+        if: github.event_name == 'workflow_dispatch'
         run: |
-          VERSION="${{ steps.extract-version.outputs.version }}"
-          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
-            echo "Version v$VERSION already has a tag, skipping release"
-            echo "should_release=false" >> $GITHUB_OUTPUT
+          VERSION=${{ github.event.inputs.version }}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Using version from input: $VERSION"
+
+      # Set unified version
+      - name: Set version
+        id: get-version
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            VERSION="${{ steps.get-version-from-tag.outputs.version }}"
           else
-            echo "Version v$VERSION needs to be released"
-            echo "should_release=true" >> $GITHUB_OUTPUT
+            VERSION="${{ steps.get-version-from-input.outputs.version }}"
           fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Using version: $VERSION"
 
-  create-tag:
-    name: Create Tag
-    needs: check-version
-    if: needs.check-version.outputs.should_release == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Create tag
+      # Create tag if running manually
+      - name: Create Tag
+        if: github.event_name == 'workflow_dispatch'
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
           
-          # Check again if tag exists before creating it (to avoid race conditions)
-          if ! git ls-remote --tags origin | grep -q "refs/tags/v${{ needs.check-version.outputs.version }}$"; then
-            echo "Creating tag v${{ needs.check-version.outputs.version }}"
-            git tag -a "v${{ needs.check-version.outputs.version }}" -m "Release v${{ needs.check-version.outputs.version }}"
-            
-            # Try pushing the tag, but don't fail if it exists (another process might have created it)
-            git push origin "v${{ needs.check-version.outputs.version }}" || echo "Tag already exists, continuing..."
+          VERSION="${{ steps.get-version.outputs.version }}"
+          
+          if git ls-remote --tags origin | grep -q "refs/tags/v$VERSION$"; then
+            echo "Tag v$VERSION already exists, skipping tag creation"
           else
-            echo "Tag v${{ needs.check-version.outputs.version }} already exists remotely"
+            echo "Creating tag v$VERSION"
+            git tag -a "v$VERSION" -m "Release v$VERSION"
+            git push origin "v$VERSION" || echo "Failed to push tag, it may already exist"
           fi
 
   # Unix builds (Linux and macOS)
