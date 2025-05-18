@@ -39,10 +39,9 @@ cd wasm
 
 This will:
 1. Build the WebAssembly module with wasm-pack
-2. Start a Python HTTP server on port 8000
-3. Serve the files from the project root
+2. Start a Python HTTP server on port 8000 directly from the wasm directory
 
-Then open your browser and navigate to `http://localhost:8000/wasm/index.html` to see the demo.
+Then open your browser and navigate to `http://localhost:8000/index.html` to see the demo.
 
 If you prefer to do it manually:
 
@@ -51,8 +50,7 @@ If you prefer to do it manually:
 cd wasm
 wasm-pack build --target web
 
-# Go back to project root and start HTTP server
-cd ..
+# Start HTTP server from the wasm directory
 python -m http.server 8000
 ```
 

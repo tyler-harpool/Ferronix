@@ -10,7 +10,7 @@ fi
 echo "Building WebAssembly module..."
 wasm-pack build --target web
 
-# Start a simple HTTP server
+# Start a simple HTTP server in the current directory (wasm folder)
 echo "Starting HTTP server on http://localhost:8000"
 echo "Press Ctrl+C to stop the server"
-cd .. && python -m http.server 8000
+python -m http.server 8000
