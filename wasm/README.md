@@ -29,19 +29,32 @@ This will generate a `pkg` directory containing the compiled WebAssembly module 
 
 ## Testing in a Browser
 
-After building, you can test the WebAssembly module using the provided HTML file:
+After building, you can test the WebAssembly module using the provided HTML file and server script:
+
+```bash
+# Use the provided convenience script
+cd wasm
+./serve.sh
+```
+
+This will:
+1. Build the WebAssembly module with wasm-pack
+2. Start a Python HTTP server on port 8000
+3. Serve the files from the project root
+
+Then open your browser and navigate to `http://localhost:8000/wasm/index.html` to see the demo.
+
+If you prefer to do it manually:
 
 ```bash
 # Build the module
+cd wasm
 wasm-pack build --target web
 
-# Serve the directory (you can use any HTTP server)
-python -m http.server
-# Or with Node.js
-npx serve
+# Go back to project root and start HTTP server
+cd ..
+python -m http.server 8000
 ```
-
-Then open your browser and navigate to `http://localhost:8000` (or the appropriate port) to see the demo.
 
 ## Usage in JavaScript/TypeScript
 

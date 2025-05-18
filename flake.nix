@@ -73,6 +73,7 @@
             wasm-pack
             binaryen # For wasm-opt
             wabt # WebAssembly Binary Toolkit
+            python310 # For simple HTTP server
           ];
 
           shellHook = ''
